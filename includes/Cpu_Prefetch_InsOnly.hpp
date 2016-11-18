@@ -11,6 +11,8 @@ private:
 	
 	unsigned long total_stalls;
 	unsigned long ifetch_stalls;
+	unsigned long total_decoded_ins;
+	unsigned long decode_stalls;
 	Trace *trace;
 	std::list<std::vector<Ins *> >fe_pipe;
 	int fe_pipe_depth;
@@ -33,4 +35,9 @@ private:
 	uint64_t prev_prefetch_cl;
 	uint64_t prev_fetch_cb;
 	int fetch_per_block;
+
+	int iq_buffer_size;
+	std::list<Ins *> iq_buffer;
+	int d_pipe_width;
+	int pd_pipe_width;
 };

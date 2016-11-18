@@ -13,6 +13,9 @@ struct cpu_config {
 	int ld_buffer_size;
 	int st_buffer_size;
 	int f_buffer_size;
+	int iq_buffer_size;
+	int pd_pipe_width;
+	int d_pipe_width;
 };
 
 typedef enum mesi {

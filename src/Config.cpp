@@ -33,14 +33,16 @@ Config::Config()
 	struct cpu_config cpu_config = {
 		.back_end = false,
 		.st_fwd = false,
-		.pf_pipe_width = 32,
+		.pf_pipe_width = 64,
 		.fe_pipe_depth = 4,
 		.fe_pipe_width = 16,
 		.ls_buffer_size = 16,
 		.ld_buffer_size = 16,
 		.st_buffer_size = 16,
 		.f_buffer_size = 16,
-		//.iq_buffer_size,
+		.iq_buffer_size = 18,
+		.pd_pipe_width = 6,
+		.d_pipe_width = 4
 	};
 	cpu_configs.push_back(cpu_config);
 	mem_hier_config = {
@@ -108,12 +110,12 @@ Config::Config()
 		.pages = 16777216
 	};
 	prefetch_config = {
-		.prefetch = false,
+		.prefetch = true,
 		.prefetch_type = BR_PREDICTOR
 	};
 	br_predictor_config = {
 		.br_predictor = true,
-		.br_pred_type = PERFECT,
+		.br_pred_type = EXACT,
 		.exact_references_per_miss = 128,
 		.two_level_config = {
 			.i = 0,
@@ -130,7 +132,7 @@ Config::Config()
 			.size = 64
 		}
 	};
-	debug_level = 3;
+	debug_level = 0;
 }
 
 void Config::parse_config(ifstream &config_file)
@@ -179,6 +181,9 @@ void Config::print_config()
 		log_info("-cpu_configs["+to_string(i)+"].pf_pipe_width,"+to_string(cpu_configs[i].pf_pipe_width));
 		log_info("-cpu_configs["+to_string(i)+"].fe_pipe_width,"+to_string(cpu_configs[i].fe_pipe_width));
 		log_info("-cpu_configs["+to_string(i)+"].f_buffer_size,"+to_string(cpu_configs[i].f_buffer_size));
+		log_info("-cpu_configs["+to_string(i)+"].iq_buffer_size,"+to_string(cpu_configs[i].iq_buffer_size));
+		log_info("-cpu_configs["+to_string(i)+"].pd_pipe_width,"+to_string(cpu_configs[i].pd_pipe_width));
+		log_info("-cpu_configs["+to_string(i)+"].d_pipe_width,"+to_string(cpu_configs[i].d_pipe_width));
 	}
 	for (int i = 0; i < l1i_configs.size(); i++) {
 		log_info("-l1i_configs["+to_string(i)+"].sets,"+to_string(l1i_configs[i].sets));

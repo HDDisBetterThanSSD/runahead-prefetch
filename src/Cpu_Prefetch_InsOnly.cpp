@@ -46,6 +46,7 @@ Cpu_Prefetch_InsOnly::Cpu_Prefetch_InsOnly(const Config &config, int cpu_num): D
 	retire_ins_count = 0;
 	total_stalls = 0;
 	ifetch_stalls = 0;
+	decode_stalls = 0;
 
 	gzFile infile = gzopen(config.trace_files[cpu_num].c_str(), "r");
 	trace = new Trace(config, infile);
@@ -58,6 +59,10 @@ Cpu_Prefetch_InsOnly::Cpu_Prefetch_InsOnly(const Config &config, int cpu_num): D
 	br_predictor = new Br_Predictor(config);
 	f_buffer_size = config.cpu_configs[cpu_num].f_buffer_size;
 
+	iq_buffer_size = config.cpu_configs[cpu_num].iq_buffer_size;
+	d_pipe_width = config.cpu_configs[cpu_num].d_pipe_width;
+	pd_pipe_width = config.cpu_configs[cpu_num].pd_pipe_width;
+
 	cl_mask = ~(config.l1i_configs[0].cl_size - 1);
 	log_insanity("cl_mask "+to_hex_string(cl_mask));
 }
@@ -68,6 +73,14 @@ res_t Cpu_Prefetch_InsOnly::step()
 {
 	log_insanity("Cpu_Prefetch_InsOnly::step entered");
 	bool trace_over = false;
+
+	
+	for (int i = 0; ((iq_buffer.size() != 0) && (i < d_pipe_width)); i++) {
+		Ins *ins = iq_buffer.front();
+		iq_buffer.pop_front();
+		Ins::FreeIns(ins);
+		total_decoded_ins += 1;
+	}
 
 	//stall if prev fetch failed.
 	while (fetch_per_block > 0) {
@@ -85,57 +98,67 @@ res_t Cpu_Prefetch_InsOnly::step()
 
 	if (fetch_per_block > 0) {
 		ifetch_stalls += 1;
+		if (iq_buffer.size() == 0) {
+			decode_stalls += 1;
+		}
 	}
 
 	//fetch if not stalled
-	if ((fetch_block.size() == 0) || (fetch_per_block <= 0)) {
-		fetch_per_block = 0;
+	if (((fetch_block.size() == 0) || (fetch_per_block <= 0)) && ((iq_buffer.size()+fetch_block.size()) <= iq_buffer_size)) {
+		//if ((iq_buffer.size()+fetch_block.size()) <= iq_buffer_size) {
 
-		retire_ins_count += fetch_block.size();
-		if (retire_ins_count >= 350000000) {
-			return FAIL;
-		}
-		for (Ins *fetch_block_ins : fetch_block) {
-			Ins::FreeIns(fetch_block_ins);
-		}
-		fetch_block.clear();
-		log_insanity("CPU - "+to_string(retire_ins_count)+" instructions retired");
-		bool start_f_loop = true;
-		uint64_t f_block_start = 0;
-		while (1) {
-			while ((fetch_buffer.size() > 0) && (fetch_buffer.front().size() == 0)) {
-				fetch_buffer.pop_front();
-			}
-			if (fetch_buffer.size() == 0) {
-				break;
-			}
-			Ins *ins = fetch_buffer.front().front();
-			log_insanity("CPU - fetched "+ins->to_string());
-			fetch_buffer.front().pop_front();
-			fetch_block.push_back(ins);
+			fetch_per_block = 0;
 
-			//uint64_t ins_cla = ins->ia & ~(15);
-			uint64_t ins_cla = ins->ia & cl_mask;
-			if (ins_cla != prev_fetch_cb) {
-				Request *pf_request = Request::NewRequest(config, "f", (ins->ia & cl_mask));
-				pf_request->request_type = FETCH;
-				l1i->sub_send_request(pf_request);
+			retire_ins_count += fetch_block.size();
+			if (retire_ins_count >= 350000000) {
+				return FAIL;
+			}
+			for (Ins *fetch_block_ins : fetch_block) {
+				//Ins::FreeIns(fetch_block_ins);
+				iq_buffer.push_back(fetch_block_ins);
+			}
+			fetch_block.clear();
+			log_insanity("CPU - "+to_string(retire_ins_count)+" instructions retired");
+			bool start_f_loop = true;
+			uint64_t f_block_start = 0;
+			while (1) {
+				while ((fetch_buffer.size() > 0) && (fetch_buffer.front().size() == 0)) {
+					fetch_buffer.pop_front();
+				}
+				if (fetch_buffer.size() == 0) {
+					break;
+				}
+				Ins *ins = fetch_buffer.front().front();
+				log_insanity("CPU - fetched "+ins->to_string());
+				fetch_buffer.front().pop_front();
+				fetch_block.push_back(ins);
 
-				fetch_per_block += 1;
-				prev_fetch_cb = ins_cla;
+				//uint64_t ins_cla = ins->ia & ~(15);
+				uint64_t ins_cla = ins->ia & cl_mask;
+				if (ins_cla != prev_fetch_cb) {
+					Request *pf_request = Request::NewRequest(config, "f", (ins->ia & cl_mask));
+					pf_request->request_type = FETCH;
+					l1i->sub_send_request(pf_request);
+
+					fetch_per_block += 1;
+					prev_fetch_cb = ins_cla;
+				}
+				if (start_f_loop) {
+					f_block_start = ins->ia;
+					start_f_loop = false;
+				}
+				if ( !((ins->control_type == NO_BRANCH) || (ins->control_type == BRANCH && ins->br_dir == NOT_TAKEN)) ) {
+					break;
+				}
+				if ((ins->ia - f_block_start) > fe_pipe_width) {
+					break;
+				}
+				if (fetch_block.size() >= pd_pipe_width) {
+					break;
+				}
 			}
-			if (start_f_loop) {
-				f_block_start = ins->ia;
-				start_f_loop = false;
-			}
-			if ( !((ins->control_type == NO_BRANCH) || (ins->control_type == BRANCH && ins->br_dir == NOT_TAKEN)) ) {
-				break;
-			}
-			if ((ins->ia - f_block_start) > fe_pipe_width) {
-				break;
-			}
-		}
-		log_insanity("CPU - fetch block created with "+to_string(fetch_per_block)+" outstanding requests. fetch_buffer size "+to_string(fetch_buffer.size())+" fetch_block size"+to_string(fetch_block.size()));
+			log_insanity("CPU - fetch block created with "+to_string(fetch_per_block)+" outstanding requests. fetch_buffer size "+to_string(fetch_buffer.size())+" fetch_block size"+to_string(fetch_block.size()));
+		//}
 	} else {
 		total_stalls += 1;
 	}
@@ -149,7 +172,7 @@ res_t Cpu_Prefetch_InsOnly::step()
 	}
 
 	// create prefetch block and prefetch
-	if ((last_misp == false) || ((fetch_buffer.size() == 0) && (fetch_block.size() == 0))) {
+	if ((last_misp == false) || ((fetch_buffer.size() == 0) && (fetch_block.size() == 0) && (iq_buffer.size() == 0))) {
 		last_misp = false;
 		if (fetch_buffer.size() < f_buffer_size) {
 			bool start_pf_loop = true;
@@ -212,7 +235,7 @@ res_t Cpu_Prefetch_InsOnly::step()
 
 	
 	log_insanity("Cpu_Prefetch_InsOnly::step exited");
-	if ((trace_over) && (fetch_buffer.size() == 0) && (fetch_block.size() == 0)) {
+	if ((trace_over) && (fetch_buffer.size() == 0) && (fetch_block.size() == 0) && (iq_buffer.size() == 0)) {
 		return FAIL;
 	} else {
 		return SUCCESS;
@@ -228,7 +251,9 @@ res_t Cpu_Prefetch_InsOnly::add_l1i(Cache_L1i_Standalone *l1i)
 void Cpu_Prefetch_InsOnly::print_results()
 {
 	log_info("Total Instructions,"+to_string(retire_ins_count));
+	log_info("Total Decoded Instructions,"+to_string(total_decoded_ins));
 	log_info("Total Stalls,"+to_string(total_stalls));
 	log_info("Instruction Fetch Stalls,"+to_string(ifetch_stalls));
+	log_info("Decode Stalls,"+to_string(decode_stalls));
 	br_predictor->print_results();
 }
