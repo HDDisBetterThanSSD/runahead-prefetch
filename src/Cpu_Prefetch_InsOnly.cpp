@@ -69,74 +69,6 @@ res_t Cpu_Prefetch_InsOnly::step()
 	log_insanity("Cpu_Prefetch_InsOnly::step entered");
 	bool trace_over = false;
 
-	// remove unused pf responses
-	Response *pf_response;
-	pf_response = l1i->sub_get_response("pf");
-	while (pf_response != NULL) {
-		Response::FreeResponse(pf_response);
-		pf_response = l1i->sub_get_response("pf");
-	}
-
-	// create prefetch block and prefetch
-	if ((last_misp == false) || ((fetch_buffer.size() == 0) && (fetch_block.size() == 0))) {
-		last_misp = false;
-		if (fetch_buffer.size() < f_buffer_size) {
-			bool start_pf_loop = true;
-			uint64_t pf_block_start = 0;
-			list<Ins *> prefetch_block;
-			while (1) {
-				Ins *ins = trace->next_ins();
-				if (ins == NULL) {
-					trace_over = true;
-					break;
-				}
-				log_insanity("CPU - prefetched "+ins->to_string());
-				uint64_t ins_cla = ins->ia & cl_mask;
-				if ((config.prefetch_config.prefetch) && (ins_cla != prev_prefetch_cl)) {
-					Request *pf_request = Request::NewRequest(config, "pf", ins_cla);
-					pf_request->request_type = FETCH;
-					l1i->sub_send_request(pf_request);
-
-					prev_prefetch_cl = ins_cla;
-				}
-				prefetch_block.push_back(ins);
-				if (start_pf_loop) {
-					pf_block_start = ins->ia;
-					log_insanity("ins->ia "+to_hex_string(ins->ia)+" pf_block start "+to_hex_string(pf_block_start));
-					start_pf_loop = false;
-				}
-				if (ins->control_type != NO_BRANCH) {
-					res_t predict_res = br_predictor->predict(ins);
-					if (predict_res == SUCCESS) {
-						if (ins->br_dir == TAKEN) {
-							log_insanity("CPU - predicted taken control instruction "+ins->to_string());
-							if (config.prefetch_config.prefetch && (config.prefetch_config.prefetch_type == BR_PREDICTOR) && ((ins->ta & cl_mask) != prev_prefetch_cl)) {
-								Request *pf_request = Request::NewRequest(config, "pf", (ins->ta & cl_mask));
-								pf_request->request_type = FETCH;
-								l1i->sub_send_request(pf_request);
-							}
-
-							prev_prefetch_cl = (ins->ta & cl_mask);
-						}
-					} else {
-						last_misp = true;
-					}
-					if ( !((ins->control_type == BRANCH) && (ins->br_dir == NOT_TAKEN)) || (predict_res == FAIL) ) {
-						log_insanity("CPU - mispredicted not-taken or taken control instruction "+ins->to_string()+"terminate prefetch block");
-						break;
-					}
-				}
-				if ((ins->ia - pf_block_start) > pf_pipe_width) {
-					break;
-				}
-			}
-			if (prefetch_block.front() != NULL) {
-				log_insanity("ins->ia "+to_hex_string(prefetch_block.front()->ia)+" pf_block finished "+to_hex_string(pf_block_start));
-			}
-			fetch_buffer.push_back(prefetch_block);
-		}
-	}
-
 	//stall if prev fetch failed.
 	while (fetch_per_block > 0) {
 		Response *f_response = l1i->sub_get_response("f");
@@ -207,6 +139,76 @@ res_t Cpu_Prefetch_InsOnly::step()
 	} else {
 		total_stalls += 1;
 	}
+
+	// remove unused pf responses
+	Response *pf_response;
+	pf_response = l1i->sub_get_response("pf");
+	while (pf_response != NULL) {
+		Response::FreeResponse(pf_response);
+		pf_response = l1i->sub_get_response("pf");
+	}
+
+	// create prefetch block and prefetch
+	if ((last_misp == false) || ((fetch_buffer.size() == 0) && (fetch_block.size() == 0))) {
+		last_misp = false;
+		if (fetch_buffer.size() < f_buffer_size) {
+			bool start_pf_loop = true;
+			uint64_t pf_block_start = 0;
+			list<Ins *> prefetch_block;
+			while (1) {
+				Ins *ins = trace->next_ins();
+				if (ins == NULL) {
+					trace_over = true;
+					break;
+				}
+				log_insanity("CPU - prefetched "+ins->to_string());
+				uint64_t ins_cla = ins->ia & cl_mask;
+				if ((config.prefetch_config.prefetch) && (ins_cla != prev_prefetch_cl)) {
+					Request *pf_request = Request::NewRequest(config, "pf", ins_cla);
+					pf_request->request_type = FETCH;
+					l1i->sub_send_request(pf_request);
+
+					prev_prefetch_cl = ins_cla;
+				}
+				prefetch_block.push_back(ins);
+				if (start_pf_loop) {
+					pf_block_start = ins->ia;
+					log_insanity("ins->ia "+to_hex_string(ins->ia)+" pf_block start "+to_hex_string(pf_block_start));
+					start_pf_loop = false;
+				}
+				if (ins->control_type != NO_BRANCH) {
+					res_t predict_res = br_predictor->predict(ins);
+					if (predict_res == SUCCESS) {
+						if (ins->br_dir == TAKEN) {
+							log_insanity("CPU - predicted taken control instruction "+ins->to_string());
+							if (config.prefetch_config.prefetch && (config.prefetch_config.prefetch_type == BR_PREDICTOR) && ((ins->ta & cl_mask) != prev_prefetch_cl)) {
+								Request *pf_request = Request::NewRequest(config, "pf", (ins->ta & cl_mask));
+								pf_request->request_type = FETCH;
+								l1i->sub_send_request(pf_request);
+							}
+
+							prev_prefetch_cl = (ins->ta & cl_mask);
+						}
+					} else {
+						last_misp = true;
+					}
+					if ( !((ins->control_type == BRANCH) && (ins->br_dir == NOT_TAKEN)) || (predict_res == FAIL) ) {
+						log_insanity("CPU - mispredicted not-taken or taken control instruction "+ins->to_string()+"terminate prefetch block");
+						break;
+					}
+				}
+				if ((ins->ia - pf_block_start) > pf_pipe_width) {
+					break;
+				}
+			}
+			if (prefetch_block.front() != NULL) {
+				log_insanity("ins->ia "+to_hex_string(prefetch_block.front()->ia)+" pf_block finished "+to_hex_string(pf_block_start));
+			}
+			fetch_buffer.push_back(prefetch_block);
+		}
+	}
+
+	
 	log_insanity("Cpu_Prefetch_InsOnly::step exited");
 	if ((trace_over) && (fetch_buffer.size() == 0) && (fetch_block.size() == 0)) {
 		return FAIL;

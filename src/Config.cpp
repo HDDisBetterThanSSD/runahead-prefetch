@@ -107,12 +107,12 @@ Config::Config()
 		.pages = 16777216
 	};
 	prefetch_config = {
-		.prefetch = true,
+		.prefetch = false,
 		.prefetch_type = BR_PREDICTOR
 	};
 	br_predictor_config = {
 		.br_predictor = true,
-		.br_pred_type = EXACT,
+		.br_pred_type = PERFECT,
 		.exact_references_per_miss = 128,
 		.two_level_config = {
 			.i = 0,
