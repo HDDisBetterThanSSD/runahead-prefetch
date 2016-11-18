@@ -6,7 +6,7 @@ LDFLAGS=-I.
 
 IDIR=includes
 SDIR=src
-ODIR=$(SDIR)/obj
+ODIR=obj
 CPPFLAGS=-std=c++11 -O3 -Wall -I$(IDIR)/
 
 _DEPS = Cache.hpp Config.hpp Cpu.hpp debug.hpp defines.hpp Ins.hpp Mem_Hierarchy.hpp Mem_Interface.hpp Memory.hpp Mmu.hpp Request.hpp Response.hpp Simulate.hpp Trace.hpp Cpu_Prefetch_InsOnly.hpp Cache_L1i_Standalone.hpp Br_Predictor.hpp Driver.hpp 2level.hpp

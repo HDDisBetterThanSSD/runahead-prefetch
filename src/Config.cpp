@@ -33,6 +33,7 @@ Config::Config()
 	struct cpu_config cpu_config = {
 		.back_end = false,
 		.st_fwd = false,
+		.pf_pipe_width = 32,
 		.fe_pipe_depth = 4,
 		.fe_pipe_width = 16,
 		.ls_buffer_size = 16,
@@ -106,12 +107,12 @@ Config::Config()
 		.pages = 16777216
 	};
 	prefetch_config = {
-		.prefetch = false,
+		.prefetch = true,
 		.prefetch_type = BR_PREDICTOR
 	};
 	br_predictor_config = {
 		.br_predictor = true,
-		.br_pred_type = PERFECT,
+		.br_pred_type = EXACT,
 		.exact_references_per_miss = 128,
 		.two_level_config = {
 			.i = 0,
@@ -174,6 +175,7 @@ void Config::print_config()
 	log_info("-outfile,"+outfile);
 	log_info("-l1i_standalone,"+to_string(l1i_standalone));
 	for (int i = 0; i < cpu_configs.size(); i++) {
+		log_info("-cpu_configs["+to_string(i)+"].pf_pipe_width,"+to_string(cpu_configs[i].pf_pipe_width));
 		log_info("-cpu_configs["+to_string(i)+"].fe_pipe_width,"+to_string(cpu_configs[i].fe_pipe_width));
 		log_info("-cpu_configs["+to_string(i)+"].f_buffer_size,"+to_string(cpu_configs[i].f_buffer_size));
 	}

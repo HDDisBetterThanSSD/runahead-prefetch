@@ -6,6 +6,7 @@ typedef enum replacement_policy {
 struct cpu_config {
 	bool back_end;
 	bool st_fwd;
+	int pf_pipe_width;
 	int fe_pipe_depth;
 	int fe_pipe_width;
 	int ls_buffer_size;

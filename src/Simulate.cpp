@@ -53,6 +53,7 @@ void Simulate::run()
 	int num_fail;
 	//for (steps = 0; steps < 1000000; steps++) {
 	do {
+		mem_hierarchy->step();
 		num_fail = 0;
 		for (Driver *driver : drivers) {
 			res_t res = driver->step();
@@ -60,7 +61,6 @@ void Simulate::run()
 				num_fail++;
 		}
 		if (num_fail >= drivers.size()) break;
-		mem_hierarchy->step();
 		steps += 1;
 		if ((steps % 10000000) == 0) {
 			cout << steps << " cycles simulated; " << drivers[0]->get_retire_ins_count() << " instructions executed" << endl;

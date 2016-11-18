@@ -51,7 +51,7 @@ Cpu_Prefetch_InsOnly::Cpu_Prefetch_InsOnly(const Config &config, int cpu_num): D
 	trace = new Trace(config, infile);
 	log_insanity("Cpu_Prefetch_InsOnly::Cpu_Prefetch_InsOnly exited");
 
-	pf_pipe_width = 32;
+	pf_pipe_width = config.cpu_configs[cpu_num].pf_pipe_width;
 	prev_prefetch_cl = 0;
 	prev_fetch_cb = 0;
 	fetch_per_block = 0;

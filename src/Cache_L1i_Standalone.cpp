@@ -78,7 +78,7 @@ res_t Cache_L1i_Standalone::step()
 		if (it->first <= steps) {
 			list<Request *> requests = it->second;
 			for (Request *request : requests) {
-				log_insanity("sub_send_request - FILLED request "+to_hex_string(request->da)+" from "+request->req_obj);
+				log_insanity("step - FILLED request "+to_hex_string(request->da)+" from "+request->req_obj);
 				fill(request->da, EXCLUSIVE);
 				read(request->da);
 				super_in_request_completion.erase(request->da);
@@ -117,11 +117,11 @@ res_t Cache_L1i_Standalone::step()
 			} else {
 				break;
 			}
-			log_insanity("sub_send_request - MISS received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(completion_cycle));
+			log_insanity("step - MISS received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(completion_cycle));
 		} else {
 			total_requests["f"] += 1;
 			read(request->da);
-			log_insanity("sub_send_request - HIT received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps));
+			log_insanity("step - HIT received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps));
 		}
 		super_in_request_buffer["f"].pop_front();
 		Response *response = Response::NewResponse(config, request);
@@ -148,7 +148,7 @@ res_t Cache_L1i_Standalone::step()
 				super_in_request_buffer["pf"].pop_front();
 				Request::FreeRequest(request);
 				i++;
-				log_insanity("sub_send_request - HIT received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps));
+				log_insanity("step - HIT received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps));
 				continue;
 			}
 			log_insanity("sub_send_request - HIT received request "+to_hex_string(request->da)+" from "+request->req_obj+" false miss to do lack of L1i bw");
@@ -159,7 +159,7 @@ res_t Cache_L1i_Standalone::step()
 			super_in_miss_buffer[steps + miss_latency].push_back(request);
 			super_in_request_completion[request->da] = steps + miss_latency;
 			super_in_request_buffer["pf"].pop_front();
-			log_insanity("sub_send_request - MISS received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps + miss_latency));
+			log_insanity("step - MISS received request "+to_hex_string(request->da)+" from "+request->req_obj+" return in cycle "+to_string(steps + miss_latency));
 		} else {
 			break;
 		}
