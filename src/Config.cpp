@@ -40,6 +40,7 @@ Config::Config()
 		.ld_buffer_size = 16,
 		.st_buffer_size = 16,
 		.f_buffer_size = 16,
+		//.iq_buffer_size,
 	};
 	cpu_configs.push_back(cpu_config);
 	mem_hier_config = {
@@ -129,7 +130,7 @@ Config::Config()
 			.size = 64
 		}
 	};
-	debug_level = 0;
+	debug_level = 3;
 }
 
 void Config::parse_config(ifstream &config_file)

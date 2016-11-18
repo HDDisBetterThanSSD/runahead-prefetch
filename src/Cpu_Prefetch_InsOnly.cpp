@@ -135,7 +135,7 @@ res_t Cpu_Prefetch_InsOnly::step()
 				break;
 			}
 		}
-		log_insanity("CPU - fetch block created with "+to_string(fetch_per_block)+" outstanding requests");
+		log_insanity("CPU - fetch block created with "+to_string(fetch_per_block)+" outstanding requests. fetch_buffer size "+to_string(fetch_buffer.size())+" fetch_block size"+to_string(fetch_block.size()));
 	} else {
 		total_stalls += 1;
 	}
@@ -204,7 +204,9 @@ res_t Cpu_Prefetch_InsOnly::step()
 			if (prefetch_block.front() != NULL) {
 				log_insanity("ins->ia "+to_hex_string(prefetch_block.front()->ia)+" pf_block finished "+to_hex_string(pf_block_start));
 			}
-			fetch_buffer.push_back(prefetch_block);
+			if (prefetch_block.size() != 0) {
+				fetch_buffer.push_back(prefetch_block);
+			}
 		}
 	}
 
