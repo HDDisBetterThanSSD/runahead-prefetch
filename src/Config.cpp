@@ -33,7 +33,7 @@ Config::Config()
 	struct cpu_config cpu_config = {
 		.back_end = false,
 		.st_fwd = false,
-		.pf_pipe_width = 64,
+		.pf_pipe_width = 32,
 		.fe_pipe_depth = 4,
 		.fe_pipe_width = 16,
 		.ls_buffer_size = 16,
@@ -59,9 +59,9 @@ Config::Config()
 		.cl_size = 64,
 		.replacement_policy = LRU,
 		.hit_latency = 1,
-		.hit_request_bw = -1,
+		.hit_request_bw = 2,
 		.miss_latency = 8,
-		.miss_byte_bw = -1,
+		.miss_byte_bw = 32,
 		.addr_bits = 48,
 		.in_request_buffer_size = 16,
 		.in_response_buffer_size = 16,
@@ -151,6 +151,12 @@ void Config::parse_args(int argc, char *argv[])
 			update_config(string(argv[i]), string(argv[i+1]));
 		} else if (strncmp(argv[i], "-logfile", 8) == 0) {
 			update_config(string(argv[i]), string(argv[i+1]));
+		} else if (strncmp(argv[i], "-br_predictor_config.exact_references_per_miss", 50) == 0) {
+			update_config(string(argv[i]), string(argv[i+1]));
+		} else if (strncmp(argv[i], "-br_predictor_config.br_pred_type", 50) == 0) {
+			update_config(string(argv[i]), string(argv[i+1]));
+		} else if (strncmp(argv[i], "-prefetch_config.prefetch", 50) == 0) {
+			update_config(string(argv[i]), string(argv[i+1]));
 		}
 	}
 }
@@ -166,6 +172,12 @@ res_t Config::update_config(const string &config, const string &value)
 	} else if (config == "-logfile") {
 		logfile = value;
 		return SUCCESS;
+	} else if (config == "-br_predictor_config.exact_references_per_miss") {
+		br_predictor_config.exact_references_per_miss = stoi(value);
+	} else if (config == "-br_predictor_config.br_pred_type") {
+		br_predictor_config.br_pred_type = (br_pred_type_t) stoi(value);
+	} else if (config == "-prefetch_config.prefetch") {
+		prefetch_config.prefetch = stoi(value);
 	}
 	return FAIL;
 }
