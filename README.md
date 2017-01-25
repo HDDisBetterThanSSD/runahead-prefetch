@@ -27,6 +27,36 @@ Execute the following for a basic simulation:
 ```
 $ ./mp_tc_sim -t <trace_file>
 ```
+## Output
+After a run, a csv file with high-level statistics about the simulation of the trace file will be printed to the console and the outfile. Below is an example:
+87756679: Total Instructions,349952973
+87756679: Total Decoded Instructions,349952973
+87756679: Total Stalls,18073222
+87756679: Instruction Fetch Stalls,170656
+87756679: Decode Stalls,118778
+87756679: Total Jumps,0
+87756679: Total Mispredicted Jumps,0
+87756679: Total Calls,0
+87756679: Total Mispredicted Calls,0
+87756679: Total Returns,0
+87756679: Total Mispredicted Returns,0
+87756679: Total Taken Branches,0
+87756679: Total Not Taken Branches,0
+87756679: Total Mispredicted Branches,0
+87756679: Total Mispredicted Branch Directions,0
+87756679: Total Mispredicted Branch Targets,0
+87756679: Total f Misses,21334
+87756679: Total pf Misses,3170060
+87756679: Total f Requests,33431152
+87756679: Total pf Requests,32613171
+
+Below is a quick explanation of some of the statistics:
+- Decode Stalls: Total number of cycles in which the decode stage could not progress because it is starved
+- Instruction Fetch Stalls: Total number of cycles in which the fetch stage is stalled on the L1i cache
+- Total Stalls: Total number of cycles in which the fetch stage is stalled or starved.
+- f Misses/Requests: refers to L1i Misses/Requests from the fetch stage
+- pf Misses/Requests: refers to L1i Misses/Requests from the prefetch/predict stage
+
 ## Configurations
 Before every simulation the parameters used to configure the simulator are printed to the console. This implementation allows for a variety of configurations which can be configured in the Config.cpp file. Some of these configurations can also be changed by passing a command line option. Below includes a list of some of the configurations available:
 
@@ -73,3 +103,5 @@ Before every simulation the parameters used to configure the simulator are print
    - br_predictor_config.btb_config.sets: number of sets used in the BTB cache. one way each allowed only.
    - br_predictor_config.btb_config.addr_bits: size of addresses in bits. to ensure unique tags within the appropriate size constraints.
   - br_predictor_config.call_stack_config.size: number of entries available in the call stack. Call Stack only used when TWO-LEVEL branch predictor enabled.
+
+There are more options listed in the Config.cpp source file, but these options either are necessary for Runahead Prefetch simulation, or are not entirely defined or implemented, but may be useful for future implementations.
