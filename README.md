@@ -59,4 +59,17 @@ Before every simulation the parameters used to configure the simulator are print
   - N1L: automatically prefetch the next cache line
   - N2L: automatically prefetch the next two cache lines
   - BR_PREDICTOR: prefetch the path determined by the branch predictor
- - br_predictor_config
+ - br_predictor_config: provides options for configuring the branch predictor
+  - br_predictor_config.br_predictor: branch predictor active (true/false)
+  - br_predictor_config.br_pred_type: type of branch predictor for the simulation (PERFECT, EXACT, TWO-LEVEL)
+  - br_predictor_config.exact_references_per_miss: if EXACT branch predictor used, stipulate how many references br_predictor references should occur between branch mispredictions.
+  - br_predictor_config.two_level_config: provides options for configuring the two-level branch predictor if used.
+   - br_predictor_config.two_level_config.i: 2^i number of BHSRs (Branch History Shift Registers)
+   - br_predictor_config.two_level_config.j: 2^j number of PHTs (Pattern History Tables)
+   - br_predictor_config.two_level_config.k: k number of bits in each BHSR
+   - br_predictor_config.two_level_config.s: 2^s branch history sets
+   - br_predictor_config.two_level_config.init_val:
+  - br_predictor_config.btb_config: provides options for configuring the Branch Target Buffer (BTB) when TWO-LEVEL is used
+   - br_predictor_config.btb_config.sets: number of sets used in the BTB cache. one way each allowed only.
+   - br_predictor_config.btb_config.addr_bits: size of addresses in bits. to ensure unique tags within the appropriate size constraints.
+  - br_predictor_config.call_stack_config.size: number of entries available in the call stack. Call Stack only used when TWO-LEVEL branch predictor enabled.
