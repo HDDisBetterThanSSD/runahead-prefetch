@@ -29,6 +29,7 @@ $ ./mp_tc_sim -t <trace_file>
 ```
 ## Output
 After a run, a csv file with high-level statistics about the simulation of the trace file will be printed to the console and the outfile. Below is an example:
+```
 87756679: Total Instructions,349952973
 87756679: Total Decoded Instructions,349952973
 87756679: Total Stalls,18073222
@@ -49,6 +50,7 @@ After a run, a csv file with high-level statistics about the simulation of the t
 87756679: Total pf Misses,3170060
 87756679: Total f Requests,33431152
 87756679: Total pf Requests,32613171
+```
 
 Below is a quick explanation of some of the statistics:
 - Decode Stalls: Total number of cycles in which the decode stage could not progress because it is starved
